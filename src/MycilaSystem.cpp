@@ -13,6 +13,20 @@
 #include <esp_system.h>
 #include <esp_wifi.h>
 
+#ifdef MYCILA_LOGGER_SUPPORT
+#include <MycilaLogger.h>
+extern Mycila::Logger logger;
+#define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
+#define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
+#define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
+#define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
+#else
+#define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
+#define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
+#define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
+#define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
+#endif
+
 #define TAG "SYSTEM"
 
 #define KEY_BOOTS "boots"
@@ -23,16 +37,16 @@
 #endif
 
 void Mycila::SystemClass::begin() {
-  ESP_LOGD(TAG, "Initializing File System...");
+  LOGI(TAG, "Initializing File System...");
   nvs_flash_init();
   if (LittleFS.begin(false))
-    ESP_LOGD(TAG, "File System initialized");
+    LOGD(TAG, "File System initialized");
   else {
-    ESP_LOGW(TAG, "File System initialization failed. Trying to format...");
+    LOGW(TAG, "File System initialization failed. Trying to format...");
     if (LittleFS.begin(true))
-      ESP_LOGW(TAG, "Successfully formatted and initialized");
+      LOGW(TAG, "Successfully formatted and initialized");
     else
-      ESP_LOGE(TAG, "Failed to format");
+      LOGE(TAG, "Failed to format");
   }
 
   Preferences prefs;
@@ -40,7 +54,7 @@ void Mycila::SystemClass::begin() {
 
   _boots = (prefs.isKey(KEY_BOOTS) ? prefs.getULong(KEY_BOOTS, 0) : 0) + 1;
   prefs.putULong(KEY_BOOTS, _boots);
-  ESP_LOGD(TAG, "Booted %llu times", _boots);
+  LOGD(TAG, "Booted %llu times", _boots);
 
 #ifdef MYCILA_SYSTEM_BOOT_WAIT_FOR_RESET
   const int count = (prefs.isKey(KEY_RESETS) ? prefs.getInt(KEY_RESETS, 0) : 0) + 1;
@@ -54,7 +68,7 @@ void Mycila::SystemClass::begin() {
       delay(500);
     }
     prefs.remove(KEY_RESETS);
-    ESP_LOGD(TAG, "No hard reset");
+    LOGD(TAG, "No hard reset");
   }
 #endif
 
@@ -62,14 +76,14 @@ void Mycila::SystemClass::begin() {
 }
 
 void Mycila::SystemClass::reset() {
-  ESP_LOGD(TAG, "Triggering System Reset...");
+  LOGD(TAG, "Triggering System Reset...");
   nvs_flash_erase();
   nvs_flash_init();
   esp_restart();
 }
 
 void Mycila::SystemClass::restart(uint32_t delayMillisBeforeRestart) {
-  ESP_LOGD(TAG, "Triggering System Restart...");
+  LOGD(TAG, "Triggering System Restart...");
   if (delayMillisBeforeRestart == 0)
     esp_restart();
   else {
@@ -78,7 +92,7 @@ void Mycila::SystemClass::restart(uint32_t delayMillisBeforeRestart) {
 }
 
 void Mycila::SystemClass::deepSleep(uint64_t delayMicros) {
-  ESP_LOGI(TAG, "Deep Sleep for %llu us!", delayMicros);
+  LOGI(TAG, "Deep Sleep for %llu us!", delayMicros);
 
 #if SOC_UART_NUM > 2
   Serial2.end();
