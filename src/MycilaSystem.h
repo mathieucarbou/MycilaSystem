@@ -9,7 +9,7 @@
 #include <esp_timer.h>
 #include <functional>
 
-#ifdef MYCILA_SYSTEM_JSON_SUPPORT
+#ifdef MYCILA_JSON_SUPPORT
 #include <ArduinoJson.h>
 #endif
 
@@ -38,7 +38,7 @@ namespace Mycila {
       const SystemMemory getMemory() const;
       uint32_t getBootCount() const { return _boots; }
 
-#ifdef MYCILA_SYSTEM_JSON_SUPPORT
+#ifdef MYCILA_JSON_SUPPORT
       void toJson(const JsonObject& root) const;
 #endif
 

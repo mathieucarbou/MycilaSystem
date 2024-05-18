@@ -125,7 +125,7 @@ const Mycila::SystemMemory Mycila::SystemClass::getMemory() const {
     .usage = round(static_cast<float>(info.total_allocated_bytes) / static_cast<float>(info.total_free_bytes + info.total_allocated_bytes) * 10000) / 100};
 }
 
-#ifdef MYCILA_SYSTEM_JSON_SUPPORT
+#ifdef MYCILA_JSON_SUPPORT
 void Mycila::SystemClass::toJson(const JsonObject& root) const {
   SystemMemory memory = getMemory();
   esp_chip_info_t chip_info;
