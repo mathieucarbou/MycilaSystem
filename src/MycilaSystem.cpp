@@ -54,7 +54,7 @@ void Mycila::SystemClass::begin() {
 
   _boots = (prefs.isKey(KEY_BOOTS) ? prefs.getULong(KEY_BOOTS, 0) : 0) + 1;
   prefs.putULong(KEY_BOOTS, _boots);
-  LOGD(TAG, "Booted %llu times", _boots);
+  LOGI(TAG, "Booted %" PRIu32 " times", _boots);
 
 #ifdef MYCILA_SYSTEM_BOOT_WAIT_FOR_RESET
   const int count = (prefs.isKey(KEY_RESETS) ? prefs.getInt(KEY_RESETS, 0) : 0) + 1;
@@ -92,7 +92,7 @@ void Mycila::SystemClass::restart(uint32_t delayMillisBeforeRestart) {
 }
 
 void Mycila::SystemClass::deepSleep(uint64_t delayMicros) {
-  LOGI(TAG, "Deep Sleep for %llu us!", delayMicros);
+  LOGI(TAG, "Deep Sleep for %" PRIu64 " us!", delayMicros);
 
 #if SOC_UART_NUM > 2
   Serial2.end();
