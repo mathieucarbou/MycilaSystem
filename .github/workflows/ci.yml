@@ -79,6 +79,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: lolin_s2_mini|espressif32
+            board: lolin_s2_mini
+            platform: espressif32
+            opts:
           - name: esp32dev|espressif32
             board: esp32dev
             platform: espressif32

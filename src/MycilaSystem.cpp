@@ -7,11 +7,13 @@
 #include <LittleFS.h>
 #include <Preferences.h>
 #include <nvs_flash.h>
-
-#include <esp_bt.h>
-#include <esp_bt_main.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
+
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
+#include <esp_bt.h>
+#include <esp_bt_main.h>
+#endif
 
 #ifdef MYCILA_LOGGER_SUPPORT
 #include <MycilaLogger.h>
@@ -103,8 +105,11 @@ void Mycila::SystemClass::deepSleep(uint64_t delayMicros) {
   Serial.end();
 
   esp_wifi_stop();
+
+  #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
   esp_bt_controller_disable();
   esp_bluedroid_disable();
+  #endif
 
   // equiv to esp_deep_sleep(delayMicros);
   // esp_sleep_enable_timer_wakeup(seconds * (uint64_t)1000000ULL);
