@@ -34,7 +34,8 @@ namespace Mycila {
       void restart(uint32_t delayMillisBeforeRestart = 0);
       void deepSleep(uint64_t delayMicros);
 
-      inline int64_t getUptime() const { return esp_timer_get_time() / (int64_t)1000000; }
+      // returns the uptime in seconds
+      inline uint32_t getUptime() const { return static_cast<uint32_t>(esp_timer_get_time() / (int64_t)1000000); }
       const SystemMemory getMemory() const;
       uint32_t getBootCount() const { return _boots; }
 
