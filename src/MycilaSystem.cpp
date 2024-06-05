@@ -6,9 +6,9 @@
 
 #include <LittleFS.h>
 #include <Preferences.h>
-#include <nvs_flash.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
+#include <nvs_flash.h>
 
 #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
 #include <esp_bt.h>
@@ -106,10 +106,10 @@ void Mycila::SystemClass::deepSleep(uint64_t delayMicros) {
 
   esp_wifi_stop();
 
-  #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
   esp_bt_controller_disable();
   esp_bluedroid_disable();
-  #endif
+#endif
 
   // equiv to esp_deep_sleep(delayMicros);
   // esp_sleep_enable_timer_wakeup(seconds * (uint64_t)1000000ULL);
@@ -133,12 +133,10 @@ const Mycila::SystemMemory Mycila::SystemClass::getMemory() const {
 #ifdef MYCILA_JSON_SUPPORT
 void Mycila::SystemClass::toJson(const JsonObject& root) const {
   SystemMemory memory = getMemory();
-  esp_chip_info_t chip_info;
-  esp_chip_info(&chip_info);
   root["boots"] = _boots;
-  root["chip_cores"] = chip_info.cores;
+  root["chip_cores"] = ESP.getChipCores();
   root["chip_model"] = ESP.getChipModel();
-  root["chip_revision"] = chip_info.revision;
+  root["chip_revision"] = ESP.getChipRevision();
   root["cpu_freq"] = ESP.getCpuFreqMHz();
   root["heap_total"] = memory.total;
   root["heap_usage"] = memory.usage;
