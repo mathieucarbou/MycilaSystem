@@ -130,6 +130,16 @@ const Mycila::SystemMemory Mycila::SystemClass::getMemory() const {
     .usage = round(static_cast<float>(info.total_allocated_bytes) / static_cast<float>(info.total_free_bytes + info.total_allocated_bytes) * 10000) / 100};
 }
 
+String Mycila::SystemClass::getEspID() {
+  uint32_t chipId = 0;
+  for (int i = 0; i < 17; i += 8) {
+    chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+  }
+  String espId = String(chipId, HEX);
+  espId.toUpperCase();
+  return espId;
+}
+
 #ifdef MYCILA_JSON_SUPPORT
 void Mycila::SystemClass::toJson(const JsonObject& root) const {
   SystemMemory memory = getMemory();

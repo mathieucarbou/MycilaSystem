@@ -43,6 +43,9 @@ namespace Mycila {
       void toJson(const JsonObject& root) const;
 #endif
 
+    public:
+      static String getEspID();
+
     private:
       uint32_t _boots = 0;
       Ticker _delayedTask;
