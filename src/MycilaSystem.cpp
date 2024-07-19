@@ -45,10 +45,12 @@ void Mycila::SystemClass::begin() {
     LOGD(TAG, "File System initialized");
   else {
     LOGW(TAG, "File System initialization failed. Trying to format...");
-    if (LittleFS.begin(true))
-      LOGW(TAG, "Successfully formatted and initialized");
-    else
+    if (LittleFS.begin(true)) {
+      LOGW(TAG, "Successfully formatted and initialized. Rebooting...");
+      ESP.restart();
+    } else {
       LOGE(TAG, "Failed to format");
+    }
   }
 
   Preferences prefs;
