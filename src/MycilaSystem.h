@@ -13,10 +13,10 @@
 #include <ArduinoJson.h>
 #endif
 
-#define MYCILA_SYSTEM_VERSION "2.0.6"
+#define MYCILA_SYSTEM_VERSION "2.0.7"
 #define MYCILA_SYSTEM_VERSION_MAJOR 2
 #define MYCILA_SYSTEM_VERSION_MINOR 0
-#define MYCILA_SYSTEM_VERSION_REVISION 6
+#define MYCILA_SYSTEM_VERSION_REVISION 7
 
 namespace Mycila {
   typedef struct {
