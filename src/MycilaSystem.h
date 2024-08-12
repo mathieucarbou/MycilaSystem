@@ -32,6 +32,7 @@ namespace Mycila {
 
       void reset();
       void restart(uint32_t delayMillisBeforeRestart = 0);
+      bool restartFactory(const char* partitionName);
       void deepSleep(uint64_t delayMicros);
 
       // returns the uptime in seconds

@@ -6,6 +6,8 @@
 
 #include <LittleFS.h>
 #include <Preferences.h>
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
 #include <nvs_flash.h>
@@ -92,6 +94,18 @@ void Mycila::SystemClass::restart(uint32_t delayMillisBeforeRestart) {
     esp_restart();
   else {
     _delayedTask.once_ms(delayMillisBeforeRestart, esp_restart);
+  }
+}
+
+bool Mycila::SystemClass::restartFactory(const char* partitionName) {
+  const esp_partition_t* partition = esp_partition_find_first(esp_partition_type_t::ESP_PARTITION_TYPE_APP, esp_partition_subtype_t::ESP_PARTITION_SUBTYPE_APP_FACTORY, partitionName);
+  if (partition) {
+    esp_ota_set_boot_partition(partition);
+    esp_restart();
+    return true;
+  } else {
+    ESP_LOGE("SafeBoot", "SafeBoot partition not found");
+    return false;
   }
 }
 
