@@ -28,7 +28,7 @@ namespace Mycila {
 
   class SystemClass {
     public:
-      void begin();
+      void begin(bool initFS = true, const char* fsPartitionName = "fs", const char *basePath = "/littlefs", uint8_t maxOpenFiles = 10);
 
       void reset();
       void restart(uint32_t delayMillisBeforeRestart = 0);

@@ -40,18 +40,22 @@ extern Mycila::Logger logger;
 #define MYCILA_NVM_RESET_BOOT_DELAY 3
 #endif
 
-void Mycila::SystemClass::begin() {
-  LOGI(TAG, "Initializing File System...");
+void Mycila::SystemClass::begin(bool initFS, const char* fsPartitionName, const char* basePath, uint8_t maxOpenFiles) {
+  LOGI(TAG, "Initializing NVM...");
   nvs_flash_init();
-  if (LittleFS.begin(false))
-    LOGD(TAG, "File System initialized");
-  else {
-    LOGW(TAG, "File System initialization failed. Trying to format...");
-    if (LittleFS.begin(true)) {
-      LOGW(TAG, "Successfully formatted and initialized. Rebooting...");
-      ESP.restart();
-    } else {
-      LOGE(TAG, "Failed to format");
+
+  if (initFS) {
+    LOGI(TAG, "Initializing File System...");
+    if (LittleFS.begin(false, basePath, maxOpenFiles, fsPartitionName))
+      LOGD(TAG, "File System initialized");
+    else {
+      LOGW(TAG, "File System initialization failed. Trying to format...");
+      if (LittleFS.begin(true, basePath, maxOpenFiles, fsPartitionName)) {
+        LOGW(TAG, "Successfully formatted and initialized. Rebooting...");
+        esp_restart();
+      } else {
+        LOGE(TAG, "Failed to format");
+      }
     }
   }
 
