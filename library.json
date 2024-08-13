@@ -1,6 +1,6 @@
 {
   "name": "MycilaSystem",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Arduino / ESP32 library for system-related tasks",
   "homepage": "https://github.com/mathieucarbou/MycilaSystem",
   "repository": {
