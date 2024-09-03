@@ -38,6 +38,7 @@ extern Mycila::Logger logger;
 #define KEY_RESETS "resets"
 
 uint32_t Mycila::System::_boots = 0;
+Ticker Mycila::System::_delayedTask;
 
 void Mycila::System::init(bool initFS, const char* fsPartitionName, const char* basePath, uint8_t maxOpenFiles) {
   LOGI(TAG, "Initializing NVM...");
