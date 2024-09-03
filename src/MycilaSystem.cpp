@@ -13,8 +13,6 @@
 #include <esp_wifi.h>
 #include <nvs_flash.h>
 
-#include "esp_mac.h" 
-
 #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
 #include <esp_bt.h>
 #include <esp_bt_main.h>
