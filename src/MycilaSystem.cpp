@@ -6,11 +6,14 @@
 
 #include <LittleFS.h>
 #include <Preferences.h>
+
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
 #include <nvs_flash.h>
+
+#include "esp_mac.h" 
 
 #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
 #include <esp_bt.h>
@@ -36,13 +39,19 @@ extern Mycila::Logger logger;
 #define KEY_BOOTS "boots"
 #define KEY_RESETS "resets"
 
-#ifndef MYCILA_NVM_RESET_BOOT_DELAY
-#define MYCILA_NVM_RESET_BOOT_DELAY 3
-#endif
+uint32_t Mycila::System::_boots = 0;
 
-void Mycila::SystemClass::begin(bool initFS, const char* fsPartitionName, const char* basePath, uint8_t maxOpenFiles) {
+void Mycila::System::init(bool initFS, const char* fsPartitionName, const char* basePath, uint8_t maxOpenFiles) {
   LOGI(TAG, "Initializing NVM...");
-  nvs_flash_init();
+  ESP_ERROR_CHECK(nvs_flash_init());
+
+  Preferences prefs;
+  if (prefs.begin(TAG, false)) {
+    _boots = (prefs.isKey(KEY_BOOTS) ? prefs.getULong(KEY_BOOTS, 0) : 0) + 1;
+    prefs.putULong(KEY_BOOTS, _boots);
+    LOGI(TAG, "Booted %" PRIu32 " times", _boots);
+    prefs.end();
+  }
 
   if (initFS) {
     LOGI(TAG, "Initializing File System...");
@@ -54,66 +63,44 @@ void Mycila::SystemClass::begin(bool initFS, const char* fsPartitionName, const 
         LOGW(TAG, "Successfully formatted and initialized. Rebooting...");
         esp_restart();
       } else {
-        LOGE(TAG, "Failed to format");
+        LOGE(TAG, "Failed to format and initialize File System!");
       }
     }
   }
-
-  Preferences prefs;
-  prefs.begin(TAG, false);
-
-  _boots = (prefs.isKey(KEY_BOOTS) ? prefs.getULong(KEY_BOOTS, 0) : 0) + 1;
-  prefs.putULong(KEY_BOOTS, _boots);
-  LOGI(TAG, "Booted %" PRIu32 " times", _boots);
-
-#ifdef MYCILA_SYSTEM_BOOT_WAIT_FOR_RESET
-  const int count = (prefs.isKey(KEY_RESETS) ? prefs.getInt(KEY_RESETS, 0) : 0) + 1;
-  prefs.putInt(KEY_RESETS, count);
-  if (count >= 3) {
-    prefs.end();
-    reset();
-  } else {
-    Logger.warn(TAG, "WAITING FOR HARD RESET...");
-    for (uint32_t d = 0; d < MYCILA_NVM_RESET_BOOT_DELAY * 1000UL; d += 500) {
-      delay(500);
-    }
-    prefs.remove(KEY_RESETS);
-    LOGD(TAG, "No hard reset");
-  }
-#endif
-
-  prefs.end();
 }
 
-void Mycila::SystemClass::reset() {
-  LOGD(TAG, "Triggering System Reset...");
-  nvs_flash_erase();
-  nvs_flash_init();
-  esp_restart();
+void Mycila::System::reset(uint32_t delayMillisBeforeRestartMillis) {
+  LOGW(TAG, "Reset!");
+  ESP_ERROR_CHECK(nvs_flash_erase());
+  ESP_ERROR_CHECK(nvs_flash_init());
+  restart(delayMillisBeforeRestartMillis);
 }
 
-void Mycila::SystemClass::restart(uint32_t delayMillisBeforeRestart) {
-  LOGD(TAG, "Triggering System Restart...");
-  if (delayMillisBeforeRestart == 0)
+void Mycila::System::restart(uint32_t delayMillisBeforeRestartMillis) {
+  _delayedTask.detach();
+  if (delayMillisBeforeRestartMillis == 0) {
+    LOGW(TAG, "Restart!");
     esp_restart();
-  else {
-    _delayedTask.once_ms(delayMillisBeforeRestart, esp_restart);
+  } else {
+    LOGW(TAG, "Restart in %" PRIu32 " ms...", delayMillisBeforeRestartMillis);
+    _delayedTask.once_ms(delayMillisBeforeRestartMillis, esp_restart);
   }
 }
 
-bool Mycila::SystemClass::restartFactory(const char* partitionName) {
+bool Mycila::System::restartFactory(const char* partitionName, uint32_t delayMillisBeforeRestartMillis) {
   const esp_partition_t* partition = esp_partition_find_first(esp_partition_type_t::ESP_PARTITION_TYPE_APP, esp_partition_subtype_t::ESP_PARTITION_SUBTYPE_APP_FACTORY, partitionName);
   if (partition) {
-    esp_ota_set_boot_partition(partition);
-    esp_restart();
+    LOGW(TAG, "Set boot partition to %s", partitionName);
+    ESP_ERROR_CHECK(esp_ota_set_boot_partition(partition));
+    restart(delayMillisBeforeRestartMillis);
     return true;
   } else {
-    ESP_LOGE("SafeBoot", "SafeBoot partition not found");
+    ESP_LOGE(TAG, "Partition not found: %s", partitionName);
     return false;
   }
 }
 
-void Mycila::SystemClass::deepSleep(uint64_t delayMicros) {
+void Mycila::System::deepSleep(uint64_t delayMicros) {
   LOGI(TAG, "Deep Sleep for %" PRIu64 " us!", delayMicros);
 
 #if SOC_UART_NUM > 2
@@ -140,30 +127,75 @@ void Mycila::SystemClass::deepSleep(uint64_t delayMicros) {
   esp_restart();
 }
 
-const Mycila::SystemMemory Mycila::SystemClass::getMemory() const {
+void Mycila::System::getMemory(Memory& memory) {
   multi_heap_info_t info;
   heap_caps_get_info(&info, MALLOC_CAP_INTERNAL);
-  return {
-    .total = info.total_free_bytes + info.total_allocated_bytes,
-    .used = info.total_allocated_bytes,
-    .free = info.total_free_bytes,
-    .usage = round(static_cast<float>(info.total_allocated_bytes) / static_cast<float>(info.total_free_bytes + info.total_allocated_bytes) * 10000) / 100};
+  memory.total = info.total_free_bytes + info.total_allocated_bytes;
+  memory.used = info.total_allocated_bytes;
+  memory.free = info.total_free_bytes;
+  memory.usage = static_cast<float>(memory.used) / static_cast<float>(memory.total);
 }
 
-String Mycila::SystemClass::getEspID() {
+uint32_t Mycila::System::getChipID() {
   uint32_t chipId = 0;
   for (int i = 0; i < 17; i += 8) {
     chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
   }
-  String espId = String(chipId, HEX);
+  return chipId;
+}
+
+String Mycila::System::getChipIDStr() {
+  String espId = String(getChipID(), HEX);
   espId.toUpperCase();
   return espId;
 }
 
+const char* Mycila::System::getLastRebootReason() {
+  esp_reset_reason_t reason = esp_reset_reason();
+  switch (reason) {
+    case ESP_RST_UNKNOWN:
+      return "Unknown";
+    case ESP_RST_POWERON:
+      return "Power On";
+    case ESP_RST_EXT:
+      return "External Pin";
+    case ESP_RST_SW:
+      return "Software";
+    case ESP_RST_PANIC:
+      return "Panic";
+    case ESP_RST_INT_WDT:
+      return "Interrupt Watchdog";
+    case ESP_RST_TASK_WDT:
+      return "Task Watchdog";
+    case ESP_RST_WDT:
+      return "Other Watchdog";
+    case ESP_RST_DEEPSLEEP:
+      return "Deep Sleep Exit";
+    case ESP_RST_BROWNOUT:
+      return "Brownout";
+    case ESP_RST_SDIO:
+      return "SDIO";
+#if ESP_IDF_VERSION_MAJOR >= 5
+    case ESP_RST_USB:
+      return "USB Peripheral";
+    case ESP_RST_JTAG:
+      return "JTAG";
+    case ESP_RST_EFUSE:
+      return "EFUSE Error";
+    case ESP_RST_PWR_GLITCH:
+      return "Power Glitch";
+    case ESP_RST_CPU_LOCKUP:
+      return "CPU Lockup";
+#endif
+    default:
+      return "Unknown";
+  }
+}
+
 #ifdef MYCILA_JSON_SUPPORT
-void Mycila::SystemClass::toJson(const JsonObject& root) const {
-  SystemMemory memory = getMemory();
-  root["boots"] = _boots;
+void Mycila::System::toJson(const JsonObject& root) {
+  Memory memory;
+  getMemory(memory);
   root["chip_cores"] = ESP.getChipCores();
   root["chip_model"] = ESP.getChipModel();
   root["chip_revision"] = ESP.getChipRevision();
@@ -171,10 +203,8 @@ void Mycila::SystemClass::toJson(const JsonObject& root) const {
   root["heap_total"] = memory.total;
   root["heap_usage"] = memory.usage;
   root["heap_used"] = memory.used;
+  root["reboot_reason"] = getLastRebootReason();
+  root["reboot_count"] = _boots;
   root["uptime"] = getUptime();
 }
 #endif
-
-namespace Mycila {
-  SystemClass System;
-} // namespace Mycila

@@ -5,8 +5,17 @@ void setup() {
   while (!Serial)
     continue;
 
-  Mycila::System.getMemory();
-  Mycila::System.getBootCount();
+  Mycila::System::init();
+
+  Mycila::System::Memory memory;
+  Mycila::System::getMemory(memory);
+
+  Serial.println(Mycila::System::getChipID());
+  Serial.println(Mycila::System::getChipIDStr());
+  Serial.println(Mycila::System::getUptime());
+  Serial.println(Mycila::System::getBootCount());
+  Serial.println(Mycila::System::getLastRebootReason());
+  Serial.println(memory.total);
 }
 
 void loop() {
