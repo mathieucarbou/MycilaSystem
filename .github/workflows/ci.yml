@@ -136,4 +136,4 @@ jobs:
           pip install --upgrade platformio
       
       - name: Build Example1
-        run: PLATFORMIO_SRC_DIRexamples/Example1 PIO_BOARD=${{ matrix.board }} pio run -e ${{ matrix.env }}
+        run: PLATFORMIO_SRC_DIR=examples/Example1 PIO_BOARD=${{ matrix.board }} pio run -e ${{ matrix.env }}
