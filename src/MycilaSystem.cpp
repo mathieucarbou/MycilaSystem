@@ -14,27 +14,31 @@
 #include <nvs_flash.h>
 
 #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
-#include <esp_bt.h>
-#include <esp_bt_main.h>
+  #include <esp_bt.h>
+  #include <esp_bt_main.h>
+#endif
+
+#ifndef SOC_UART_HP_NUM
+  #define SOC_UART_HP_NUM SOC_UART_NUM
 #endif
 
 #ifdef MYCILA_LOGGER_SUPPORT
-#include <MycilaLogger.h>
+  #include <MycilaLogger.h>
 extern Mycila::Logger logger;
-#define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
-#define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
-#define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
-#define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
+  #define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
+  #define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
+  #define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
+  #define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
 #else
-#define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
-#define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
-#define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
-#define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
+  #define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
+  #define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
+  #define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
+  #define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
 #endif
 
 #define TAG "SYSTEM"
 
-#define KEY_BOOTS "boots"
+#define KEY_BOOTS  "boots"
 #define KEY_RESETS "resets"
 
 uint32_t Mycila::System::_boots = 0;
@@ -102,10 +106,10 @@ bool Mycila::System::restartFactory(const char* partitionName, uint32_t delayMil
 void Mycila::System::deepSleep(uint64_t delayMicros) {
   LOGI(TAG, "Deep Sleep for %" PRIu64 " us!", delayMicros);
 
-#if SOC_UART_NUM > 2
+#if SOC_UART_HP_NUM > 2
   Serial2.end();
 #endif
-#if SOC_UART_NUM > 1
+#if SOC_UART_HP_NUM > 1
   Serial1.end();
 #endif
   Serial.end();
