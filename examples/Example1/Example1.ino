@@ -16,6 +16,9 @@ void setup() {
   Serial.println(Mycila::System::getBootCount());
   Serial.println(Mycila::System::getLastRebootReason());
   Serial.println(memory.total);
+  Serial.println(memory.free);
+  Serial.println(memory.used);
+  Serial.println(memory.usage);
 
   // Mycila::System::reset();
   // Mycila::System::restart();

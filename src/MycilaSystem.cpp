@@ -136,7 +136,7 @@ void Mycila::System::getMemory(Memory& memory) {
   memory.total = info.total_free_bytes + info.total_allocated_bytes;
   memory.used = info.total_allocated_bytes;
   memory.free = info.total_free_bytes;
-  memory.usage = static_cast<float>(memory.used) / static_cast<float>(memory.total);
+  memory.usage = static_cast<float>(memory.used) / static_cast<float>(memory.total) * 100.0;
 }
 
 uint32_t Mycila::System::getChipID() {
