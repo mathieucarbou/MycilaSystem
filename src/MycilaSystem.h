@@ -25,6 +25,7 @@ namespace Mycila {
           size_t total;
           size_t used;
           size_t free;
+          size_t minimumFree;
           float usage;
       } Memory;
 

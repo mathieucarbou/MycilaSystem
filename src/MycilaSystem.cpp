@@ -136,6 +136,7 @@ void Mycila::System::getMemory(Memory& memory) {
   memory.total = info.total_free_bytes + info.total_allocated_bytes;
   memory.used = info.total_allocated_bytes;
   memory.free = info.total_free_bytes;
+  memory.minimumFree = info.minimum_free_bytes;
   memory.usage = static_cast<float>(memory.used) / static_cast<float>(memory.total) * 100.0;
 }
 
@@ -206,6 +207,8 @@ void Mycila::System::toJson(const JsonObject& root) {
   root["heap_total"] = memory.total;
   root["heap_usage"] = memory.usage;
   root["heap_used"] = memory.used;
+  root["heap_free"] = memory.free;
+  root["heap_free_min"] = memory.minimumFree;
   root["reboot_reason"] = getLastRebootReason();
   root["reboot_count"] = _boots;
   root["uptime"] = getUptime();
