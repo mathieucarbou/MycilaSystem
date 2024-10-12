@@ -42,7 +42,7 @@ namespace Mycila {
       static uint32_t getChipID();
       static String getChipIDStr();
       // returns the uptime in seconds
-      static inline uint32_t getUptime() { return static_cast<uint32_t>(esp_timer_get_time() / (int64_t)1000000); }
+      static inline uint32_t getUptime() { return static_cast<uint32_t>(esp_timer_get_time() / static_cast<int64_t>(1000000)); }
       static void getMemory(Memory& memory);
       static uint32_t getBootCount() { return _boots; }
       static const char* getLastRebootReason();
