@@ -11,7 +11,7 @@ void setup() {
   Mycila::System::getMemory(memory);
 
   Serial.println(Mycila::System::getChipID());
-  Serial.println(Mycila::System::getChipIDStr());
+  Serial.println(Mycila::System::getChipIDStr().c_str());
   Serial.println(Mycila::System::getUptime());
   Serial.println(Mycila::System::getBootCount());
   Serial.println(Mycila::System::getLastRebootReason());
@@ -27,5 +27,5 @@ void setup() {
 }
 
 void loop() {
-  delay(1000);
+  vTaskDelete(NULL);
 }

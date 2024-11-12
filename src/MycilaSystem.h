@@ -5,9 +5,10 @@
 #pragma once
 
 #include <Ticker.h>
-#include <WString.h>
 #include <esp_timer.h>
+
 #include <functional>
+#include <string>
 
 #ifdef MYCILA_JSON_SUPPORT
   #include <ArduinoJson.h>
@@ -40,10 +41,10 @@ namespace Mycila {
       static bool restartFactory(const char* partitionName = "safeboot", uint32_t delayMillisBeforeRestartMillis = 0);
 
       static uint32_t getChipID();
-      static String getChipIDStr();
+      static std::string getChipIDStr();
       // returns the uptime in seconds
       static inline uint32_t getUptime() { return static_cast<uint32_t>(esp_timer_get_time() / static_cast<int64_t>(1000000)); }
-      static void getMemory(Memory& memory);
+      static void getMemory(Memory& memory); // NOLINT
       static uint32_t getBootCount() { return _boots; }
       static const char* getLastRebootReason();
 
@@ -52,7 +53,8 @@ namespace Mycila {
 #endif
 
     private:
-      static uint32_t _boots;
       static Ticker _delayedTask;
+      static uint32_t _boots;
+      static uint32_t _chipID;
   };
 } // namespace Mycila

@@ -13,6 +13,9 @@
 #include <esp_wifi.h>
 #include <nvs_flash.h>
 
+#include <sstream>
+#include <string>
+
 #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
   #include <esp_bt.h>
   #include <esp_bt_main.h>
@@ -41,8 +44,9 @@ extern Mycila::Logger logger;
 #define KEY_BOOTS  "boots"
 #define KEY_RESETS "resets"
 
-uint32_t Mycila::System::_boots = 0;
 Ticker Mycila::System::_delayedTask;
+uint32_t Mycila::System::_boots = 0;
+uint32_t Mycila::System::_chipID = 0;
 
 void Mycila::System::init(bool initFS, const char* fsPartitionName, const char* basePath, uint8_t maxOpenFiles) {
   LOGI(TAG, "Initializing NVM...");
@@ -141,17 +145,18 @@ void Mycila::System::getMemory(Memory& memory) {
 }
 
 uint32_t Mycila::System::getChipID() {
-  uint32_t chipId = 0;
-  for (int i = 0; i < 17; i += 8) {
-    chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+  if (!_chipID) {
+    for (int i = 0; i < 17; i += 8) {
+      _chipID |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+    }
   }
-  return chipId;
+  return _chipID;
 }
 
-String Mycila::System::getChipIDStr() {
-  String espId = String(getChipID(), HEX);
-  espId.toUpperCase();
-  return espId;
+std::string Mycila::System::getChipIDStr() {
+  std::stringstream ss;
+  ss << std::uppercase << std::hex << getChipID();
+  return ss.str();
 }
 
 const char* Mycila::System::getLastRebootReason() {
