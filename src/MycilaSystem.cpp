@@ -7,12 +7,14 @@
 #include <LittleFS.h>
 #include <Preferences.h>
 
+#include <esp_core_dump.h>
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
 #include <nvs_flash.h>
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 
@@ -201,19 +203,61 @@ const char* Mycila::System::getLastRebootReason() {
   }
 }
 
+bool Mycila::System::readCoredump(Coredump& coredump) {
+  esp_core_dump_summary_t* summary = new esp_core_dump_summary_t();
+  if (esp_core_dump_get_summary(summary) == ESP_OK) {
+    coredump.task = summary->exc_task;
+
+    std::stringstream ss;
+#if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
+    for (uint32_t i = 0, count = std::min(static_cast<uint32_t>(CONFIG_ESP_COREDUMP_SUMMARY_STACKDUMP_SIZE), summary->exc_bt_info.dump_size); i < count; i++)
+      ss << "0x" << std::hex << summary->exc_bt_info.stackdump[i] << " ";
+#else
+    for (uint32_t i = 0, count = std::min(static_cast<uint32_t>(16), summary->exc_bt_info.depth); i < count; i++)
+      ss << "0x" << std::hex << summary->exc_bt_info.bt[i] << " ";
+#endif
+    coredump.backtrace = ss.str();
+
+#if ESP_IDF_VERSION_MAJOR >= 5
+    char* reason = new char[256];
+    if (esp_core_dump_get_panic_reason(reason, 256) == ESP_OK) {
+      coredump.reason = reason;
+    } else {
+      coredump.reason = "Unknown";
+    }
+    delete[] reason;
+#endif
+
+    return true;
+  } else {
+    return false;
+  }
+}
+
 #ifdef MYCILA_JSON_SUPPORT
 void Mycila::System::toJson(const JsonObject& root) {
-  Memory memory;
-  getMemory(memory);
   root["chip_cores"] = ESP.getChipCores();
   root["chip_model"] = ESP.getChipModel();
   root["chip_revision"] = ESP.getChipRevision();
   root["cpu_freq"] = ESP.getCpuFreqMHz();
-  root["heap_total"] = memory.total;
-  root["heap_usage"] = memory.usage;
-  root["heap_used"] = memory.used;
-  root["heap_free"] = memory.free;
-  root["heap_free_min"] = memory.minimumFree;
+
+  Coredump* coredump = new Coredump();
+  if (readCoredump(*coredump)) {
+    root["coredump"]["task"] = coredump->task;
+    root["coredump"]["reason"] = coredump->reason;
+    root["coredump"]["backtrace"] = coredump->backtrace;
+  }
+  delete coredump;
+
+  Memory* memory = new Memory();
+  getMemory(*memory);
+  root["heap_total"] = memory->total;
+  root["heap_usage"] = memory->usage;
+  root["heap_used"] = memory->used;
+  root["heap_free"] = memory->free;
+  root["heap_free_min"] = memory->minimumFree;
+  delete memory;
+
   root["reboot_reason"] = getLastRebootReason();
   root["reboot_count"] = _boots;
   root["uptime"] = getUptime();

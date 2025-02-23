@@ -30,6 +30,12 @@ namespace Mycila {
           float usage;
       } Memory;
 
+      typedef struct {
+          std::string task;
+          std::string reason;
+          std::string backtrace;
+      } Coredump;
+
       static void init(bool initFS = true, const char* fsPartitionName = "fs", const char* basePath = "/littlefs", uint8_t maxOpenFiles = 10);
 
       static void reset(uint32_t delayMillisBeforeRestartMillis = 0);
@@ -47,6 +53,7 @@ namespace Mycila {
       static void getMemory(Memory& memory); // NOLINT
       static uint32_t getBootCount() { return _boots; }
       static const char* getLastRebootReason();
+      static bool readCoredump(Coredump& coredump); // NOLINT
 
 #ifdef MYCILA_JSON_SUPPORT
       static void toJson(const JsonObject& root);
