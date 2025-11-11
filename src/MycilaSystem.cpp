@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
   #include <esp_bt.h>
@@ -27,59 +28,48 @@
   #define SOC_UART_HP_NUM SOC_UART_NUM
 #endif
 
-#ifdef MYCILA_LOGGER_SUPPORT
-  #include <MycilaLogger.h>
-extern Mycila::Logger logger;
-  #define LOGD(tag, format, ...) logger.debug(tag, format, ##__VA_ARGS__)
-  #define LOGI(tag, format, ...) logger.info(tag, format, ##__VA_ARGS__)
-  #define LOGW(tag, format, ...) logger.warn(tag, format, ##__VA_ARGS__)
-  #define LOGE(tag, format, ...) logger.error(tag, format, ##__VA_ARGS__)
-#else
-  #define LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
-  #define LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
-  #define LOGW(tag, format, ...) ESP_LOGW(tag, format, ##__VA_ARGS__)
-  #define LOGE(tag, format, ...) ESP_LOGE(tag, format, ##__VA_ARGS__)
-#endif
-
 #define TAG "SYSTEM"
 
 #define KEY_BOOTS  "boots"
 #define KEY_RESETS "resets"
+
+static constexpr char hexUp[] = "0123456789ABCDEF";
+static constexpr char hexLow[] = "0123456789abcdef";
 
 Ticker Mycila::System::_delayedTask;
 uint32_t Mycila::System::_boots = 0;
 uint32_t Mycila::System::_chipID = 0;
 
 void Mycila::System::init(bool initFS, const char* fsPartitionName, const char* basePath, uint8_t maxOpenFiles) {
-  LOGI(TAG, "Initializing NVM...");
+  ESP_LOGI(TAG, "Initializing NVM...");
   ESP_ERROR_CHECK(nvs_flash_init());
 
   Preferences prefs;
   if (prefs.begin(TAG, false)) {
     _boots = (prefs.isKey(KEY_BOOTS) ? prefs.getULong(KEY_BOOTS, 0) : 0) + 1;
     prefs.putULong(KEY_BOOTS, _boots);
-    LOGI(TAG, "Booted %" PRIu32 " times", _boots);
+    ESP_LOGI(TAG, "Booted %" PRIu32 " times", _boots);
     prefs.end();
   }
 
   if (initFS) {
-    LOGI(TAG, "Initializing File System...");
+    ESP_LOGI(TAG, "Initializing File System...");
     if (LittleFS.begin(false, basePath, maxOpenFiles, fsPartitionName))
-      LOGD(TAG, "File System initialized");
+      ESP_LOGD(TAG, "File System initialized");
     else {
-      LOGW(TAG, "File System initialization failed. Trying to format...");
+      ESP_LOGW(TAG, "File System initialization failed. Trying to format...");
       if (LittleFS.begin(true, basePath, maxOpenFiles, fsPartitionName)) {
-        LOGW(TAG, "Successfully formatted and initialized. Rebooting...");
+        ESP_LOGW(TAG, "Successfully formatted and initialized. Rebooting...");
         esp_restart();
       } else {
-        LOGE(TAG, "Failed to format and initialize File System!");
+        ESP_LOGE(TAG, "Failed to format and initialize File System!");
       }
     }
   }
 }
 
 void Mycila::System::reset(uint32_t delayMillisBeforeRestartMillis) {
-  LOGW(TAG, "Reset!");
+  ESP_LOGW(TAG, "Reset!");
   ESP_ERROR_CHECK(nvs_flash_erase());
   ESP_ERROR_CHECK(nvs_flash_init());
   restart(delayMillisBeforeRestartMillis);
@@ -88,10 +78,10 @@ void Mycila::System::reset(uint32_t delayMillisBeforeRestartMillis) {
 void Mycila::System::restart(uint32_t delayMillisBeforeRestartMillis) {
   _delayedTask.detach();
   if (delayMillisBeforeRestartMillis == 0) {
-    LOGW(TAG, "Restart!");
+    ESP_LOGW(TAG, "Restart!");
     esp_restart();
   } else {
-    LOGW(TAG, "Restart in %" PRIu32 " ms...", delayMillisBeforeRestartMillis);
+    ESP_LOGW(TAG, "Restart in %" PRIu32 " ms...", delayMillisBeforeRestartMillis);
     _delayedTask.once_ms(delayMillisBeforeRestartMillis, esp_restart);
   }
 }
@@ -99,7 +89,7 @@ void Mycila::System::restart(uint32_t delayMillisBeforeRestartMillis) {
 bool Mycila::System::restartFactory(const char* partitionName, uint32_t delayMillisBeforeRestartMillis) {
   const esp_partition_t* partition = esp_partition_find_first(esp_partition_type_t::ESP_PARTITION_TYPE_APP, esp_partition_subtype_t::ESP_PARTITION_SUBTYPE_APP_FACTORY, partitionName);
   if (partition) {
-    LOGW(TAG, "Set boot partition to %s", partitionName);
+    ESP_LOGW(TAG, "Set boot partition to %s", partitionName);
     ESP_ERROR_CHECK(esp_ota_set_boot_partition(partition));
     restart(delayMillisBeforeRestartMillis);
     return true;
@@ -110,7 +100,7 @@ bool Mycila::System::restartFactory(const char* partitionName, uint32_t delayMil
 }
 
 void Mycila::System::deepSleep(uint64_t delayMicros) {
-  LOGI(TAG, "Deep Sleep for %" PRIu64 " us!", delayMicros);
+  ESP_LOGI(TAG, "Deep Sleep for %" PRIu64 " us!", delayMicros);
 
 #if SOC_UART_HP_NUM > 2
   Serial2.end();
@@ -137,13 +127,14 @@ void Mycila::System::deepSleep(uint64_t delayMicros) {
 }
 
 void Mycila::System::getMemory(Memory& memory) {
-  multi_heap_info_t info;
-  heap_caps_get_info(&info, MALLOC_CAP_INTERNAL);
-  memory.total = info.total_free_bytes + info.total_allocated_bytes;
-  memory.used = info.total_allocated_bytes;
-  memory.free = info.total_free_bytes;
-  memory.minimumFree = info.minimum_free_bytes;
+  multi_heap_info_t* info = new multi_heap_info_t();
+  heap_caps_get_info(info, MALLOC_CAP_INTERNAL);
+  memory.total = info->total_free_bytes + info->total_allocated_bytes;
+  memory.used = info->total_allocated_bytes;
+  memory.free = info->total_free_bytes;
+  memory.minimumFree = info->minimum_free_bytes;
   memory.usage = static_cast<float>(memory.used) / static_cast<float>(memory.total) * 100.0f;
+  delete info;
 }
 
 uint32_t Mycila::System::getChipID() {
@@ -156,9 +147,23 @@ uint32_t Mycila::System::getChipID() {
 }
 
 std::string Mycila::System::getChipIDStr() {
-  std::stringstream ss;
-  ss << std::uppercase << std::hex << getChipID();
-  return ss.str();
+  const uint32_t chipID = getChipID();
+  if (chipID == 0) {
+    return "0";
+  }
+  std::string result;
+  result.reserve(8);
+  bool started = false;
+  for (int i = 28; i >= 0; i -= 4) {
+    char c = hexUp[(chipID >> i) & 0x0F];
+    if (!started && c != '0') {
+      started = true;
+    }
+    if (started) {
+      result += c;
+    }
+  }
+  return result.empty() ? "0" : std::move(result);
 }
 
 const char* Mycila::System::getLastRebootReason() {
@@ -216,7 +221,7 @@ bool Mycila::System::readCoredump(Coredump& coredump) {
     for (uint32_t i = 0, count = std::min(static_cast<uint32_t>(16), summary->exc_bt_info.depth); i < count; i++)
       ss << "0x" << std::hex << summary->exc_bt_info.bt[i] << " ";
 #endif
-    coredump.backtrace = ss.str();
+    coredump.backtrace = std::move(ss.str());
 
 #if ESP_IDF_VERSION_MAJOR >= 5
     char* reason = new char[256];
