@@ -14,10 +14,10 @@
   #include <ArduinoJson.h>
 #endif
 
-#define MYCILA_SYSTEM_VERSION          "4.1.0"
+#define MYCILA_SYSTEM_VERSION          "4.1.1"
 #define MYCILA_SYSTEM_VERSION_MAJOR    4
 #define MYCILA_SYSTEM_VERSION_MINOR    1
-#define MYCILA_SYSTEM_VERSION_REVISION 0
+#define MYCILA_SYSTEM_VERSION_REVISION 1
 
 namespace Mycila {
   class System {
