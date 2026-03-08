@@ -233,8 +233,10 @@ bool Mycila::System::readCoredump(Coredump& coredump) {
     delete[] reason;
 #endif
 
+    delete summary;
     return true;
   } else {
+    delete summary;
     return false;
   }
 }
