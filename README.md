@@ -8,6 +8,5 @@
 
 [![Build](https://github.com/mathieucarbou/MycilaSystem/actions/workflows/ci.yml/badge.svg)](https://github.com/mathieucarbou/MycilaSystem/actions/workflows/ci.yml)
 [![GitHub latest commit](https://badgen.net/github/last-commit/mathieucarbou/MycilaSystem)](https://GitHub.com/mathieucarbou/MycilaSystem/commit/)
-[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/mathieucarbou/MycilaSystem)
 
 Arduino / ESP32 library for system-related tasks
